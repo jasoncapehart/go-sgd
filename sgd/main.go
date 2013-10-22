@@ -32,7 +32,10 @@ import (
 	"fmt"
     "math"
     "math/rand"
+    "github.com/jasoncapehart/go-sgd/sgdlib"
 )
+
+/*
 
 // TODO: Add map{} for step_size functions
 
@@ -84,14 +87,15 @@ func lin_reg_rng(n int, slope float64) (x [][]float64, y []float64) {
     }
     return x, y
 }
+*/
 
 func main() {
     // 1d lin reg test w/ step size
     fmt.Printf("SGD step size \n")
-    x2, y2 := lin_reg_rng(100, 2)
+    x2, y2 := sgdlib.Lin_reg_rng(100, 2)
     theta_est1 := []float64{1}
     for i := 1; i < 20; i ++ {
-        theta_est1 := sgd3(y2[i], x2[i], theta_est1, "linear", i)
+        theta_est1 := sgdlib.Sgd(y2[i], x2[i], theta_est1, "linear", i)
         fmt.Printf("Loop: %v , Est: %v \n", i, theta_est1)
     }
 }

@@ -55,23 +55,26 @@ func grad_logistic_loss(y float64, x float64, theta float64) (grad float64) {
 
 // SGD w/ step size
 // First reasonable approximation of SGD
-func sgd3(y float64, x []float64, theta0 []float64, loss_func string, eta int) (theta_hat []float64) {
+func Sgd(y float64, x []float64, theta0 []float64, loss_func string, eta int) (theta_hat []float64) {
     param_count := len(theta0)
     theta_hat = make([]float64, param_count)
     theta_hat = theta0
     step_size := (1/(float64(eta) + 1))
-    fmt.Printf("Step Size: %v \n", step_size)
+    // fmt.Printf("Step Size: %v \n", step_size)
 
     for i := 0; i < param_count; i++ {
         theta_est := loss_map[loss_func](y, x[i], theta0[i])
         theta_hat[i] = theta_hat[i] + step_size * theta_est
     }
+
+    fmt.Printf("%v \n", theta_hat)
+
     return theta_hat
 }
 
 // 2d lin reg RNG
 // TODO: Add intercept
-func lin_reg_rng(n int, slope float64) (x [][]float64, y []float64) {
+func Lin_reg_rng(n int, slope float64) (x [][]float64, y []float64) {
     x = make([][]float64, n)
     y = make([]float64, n)
     
