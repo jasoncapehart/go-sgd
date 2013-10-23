@@ -23,18 +23,35 @@ package sgdlib
 
 import (
     "testing"
-    //"github.com/jasoncapehart/go-sgd/sgdlib"
+    "fmt"
 )
 
 func Test(t *testing.T) {
-    x, y := Lin_reg_rng(100, 2)
-    theta_est := []float64{1}
+    /*
+    x, y := Lin_reg_rng(100, 2, 0)
+    theta_est := make([]float64, 1)
 
-    for i := 1; i < 20; i++ {
+    for i := 0; i < 20; i++ {
+        fmt.Printf("%v \n", theta_est)
         theta_est = Sgd(y[i], x[i], theta_est, "linear", i)
     }
 
     if theta_est[0] < 1.90 || theta_est[0] > 2.10 {
         t.Errorf("Did not converge!")
     }
+    */
+
+    betas := []float64{2, 2}
+    x, y := Lin_reg_gen(100, betas, 0)
+    theta_est := make([]float64, 2)
+
+    for i := 0; i < 20; i++ {
+        fmt.Printf("%v \n", theta_est)
+        theta_est = Sgd(y[i], x[i], theta_est, "linear", i)
+    }
+
+    if theta_est[0] < 1.90 || theta_est[0] > 2.10 {
+        t.Errorf("Did not converge!")
+    }
+
 }
