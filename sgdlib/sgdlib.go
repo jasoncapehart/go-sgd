@@ -59,6 +59,18 @@ func eta_inverse(k int) (eta float64) {
     return eta
 }
 
+// Channel Types
+//======================
+type model struct {
+    Y []float64
+    X []float64
+    Theta0 []float64
+    Loss_func string
+    Eta int
+}
+
+type theta_hat []float64
+
 // Loss Functions
 //====================================
 
@@ -164,4 +176,19 @@ func Sgd(y float64, x []float64, theta0 []float64, loss_func string, eta int) (t
     return theta_hat
 }
 
+func Sgd2(input chan model, output chan theta_hat) {
+    theta_hat = make([]float64, len(theta0))
+
+    for {
+        select {
+        case model := <-input:
+            step_size := (1/(float64(model.Eta) + 1))
+            grad := loss_map[model.Loss_func](model.Y, model.X, model.Theta0)
+
+            for i := 0; i < len(model.Theta0); i++ {
+                theta_hat[i] = model.Theta0[i] + step_size * grad[i]
+            }
+            output <-theta_hat
+        }
+}
 
