@@ -41,6 +41,7 @@ import (
 	// "fmt"
     "math"
     "math/rand"
+    "time"
 )
 
 // TODO: Add map{} for step_size functions
@@ -62,7 +63,7 @@ func eta_inverse(k int) (eta float64) {
 // Channel Types
 //======================
 type model struct {
-    Y []float64
+    Y float64
     X []float64
     Theta0 []float64
     Loss_func string
@@ -70,6 +71,26 @@ type model struct {
 }
 
 type theta_hat []float64
+
+// Link Functions
+//===================================
+type link_func func(x float64) (y float64)
+
+var link_map = map[string]link_func {
+    "identity":identity,
+    "logit":logit,
+}
+
+func identity(x float64) (y float64) {
+    y = x
+    return y
+}
+
+func logit(x float64) (y float64) {
+    y = 1 / (1 + math.Exp(-x))
+    return y
+}
+
 
 // Loss Functions
 //====================================
@@ -138,10 +159,6 @@ func Lin_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []floa
     return x, y
 }
 
-func logit(x float64) float64 {
-    return 1 / (1 + math.Exp(-x))
-}
-
 // Log reg RNG
 func Log_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []float64) {
     x = make([][]float64, n)
@@ -160,6 +177,29 @@ func Log_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []floa
     return x, y
 }
 
+// TODO: Add mean and sd parameters
+
+func Gen_lin_model_rng(betas []float64, beta0 float64, link_func string, out chan []float64) {
+    time := time.NewTicker(time.Duration(1) * time.Second)
+    for {
+        select {
+        case <- time.C:
+            n := len(betas)
+            x := make([]float64, n)
+            model_rnd := make([]float64, n + 1)
+            y := beta0
+            for i := 0; i < n; i ++ {
+                x[i] = rand.Float64()
+                model_rnd[i + 1] = x[i]
+                y = y + betas[i] * x[i]
+            }
+            y = link_map[link_func](y + rand.NormFloat64())
+            model_rnd[0] = y
+            out <- model_rnd
+        }
+    }
+}
+
 // SGD Kernel
 //=============================
 
@@ -176,19 +216,20 @@ func Sgd(y float64, x []float64, theta0 []float64, loss_func string, eta int) (t
     return theta_hat
 }
 
-func Sgd2(input chan model, output chan theta_hat) {
-    theta_hat = make([]float64, len(theta0))
-
+func Sgd_online(input chan model, output chan theta_hat) {
     for {
         select {
         case model := <-input:
+            theta_est := make([]float64, len(model.Theta0))
+
             step_size := (1/(float64(model.Eta) + 1))
             grad := loss_map[model.Loss_func](model.Y, model.X, model.Theta0)
 
             for i := 0; i < len(model.Theta0); i++ {
-                theta_hat[i] = model.Theta0[i] + step_size * grad[i]
+                theta_est[i] = model.Theta0[i] + step_size * grad[i]
             }
-            output <-theta_hat
+            output <-theta_est
         }
+    }
 }
 
