@@ -43,3 +43,13 @@ func TestLogistic(t *testing.T) {
         t.Errorf("Did not converge!")
     }
 }
+
+func TestLinearConc(t *testing.T) {
+    m := glm_gen{[]float64{1, 2, 3}, 0, "identity"}
+    for i := 0; i < 100; i__ {
+        // Draw from GLM
+        // Send to SGD
+    }
+
+    // Check convergence
+}

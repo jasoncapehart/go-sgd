@@ -177,23 +177,30 @@ func Log_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []floa
     return x, y
 }
 
-// TODO: Add mean and sd parameters
+// GLM generation
+type glm_gen struct {
+    Betas []float64
+    Beta0 float64
+    Link_func string
+}
 
-func Gen_lin_model_rng(betas []float64, beta0 float64, link_func string, out chan []float64) {
-    time := time.NewTicker(time.Duration(1) * time.Second)
+
+// TODO: Add mean and sd parameters for noise
+
+func Glm_rng(in chan glm_gen, out chan []float64) {
     for {
         select {
-        case <- time.C:
-            n := len(betas)
+        case model <-in:
+            n := len(model.Betas)
             x := make([]float64, n)
             model_rnd := make([]float64, n + 1)
-            y := beta0
+            y := model.Beta0
             for i := 0; i < n; i ++ {
                 x[i] = rand.Float64()
                 model_rnd[i + 1] = x[i]
-                y = y + betas[i] * x[i]
+                y = y + model.Betas[i] * x[i]
             }
-            y = link_map[link_func](y + rand.NormFloat64())
+            y = link_map[model.Link_func](y + rand.NormFloat64())
             model_rnd[0] = y
             out <- model_rnd
         }
