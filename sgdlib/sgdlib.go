@@ -62,15 +62,17 @@ func eta_inverse(k int) (eta float64) {
 
 // Channel Types
 //======================
-type model struct {
+type Obs struct {
     Y float64
     X []float64
+}
+
+type Model struct {
     Theta0 []float64
     Loss_func string
     Eta int
 }
 
-type theta_hat []float64
 
 // Link Functions
 //===================================
@@ -140,7 +142,6 @@ func grad_logistic_loss(y float64, x []float64, theta []float64) (grad []float64
 
 // Data Generators
 //===============================
-// TODO: Lin and Log reg could be same func by passing in a "linear" or "logit" func
 
 // Lin reg RNG
 func Lin_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []float64) {
@@ -178,7 +179,7 @@ func Log_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []floa
 }
 
 // GLM generation
-type glm_gen struct {
+type Glm_gen struct {
     Betas []float64
     Beta0 float64
     Link_func string
@@ -187,22 +188,22 @@ type glm_gen struct {
 
 // TODO: Add mean and sd parameters for noise
 
-func Glm_rng(in chan glm_gen, out chan []float64) {
+func Glm_rng(params Glm_gen, out chan Model) {
     for {
         select {
-        case model <-in:
-            n := len(model.Betas)
-            x := make([]float64, n)
-            model_rnd := make([]float64, n + 1)
-            y := model.Beta0
+        case params:
+            n := len(params.Betas)
+            data := Model{}
+            data.X := make([]float64, n)
+            data.Y := model.Beta0
+
             for i := 0; i < n; i ++ {
-                x[i] = rand.Float64()
-                model_rnd[i + 1] = x[i]
-                y = y + model.Betas[i] * x[i]
+                data.X[i] = rand.Float64()
+                data.Y = data.Y + params.Betas[i] * data.X[i]
             }
-            y = link_map[model.Link_func](y + rand.NormFloat64())
-            model_rnd[0] = y
-            out <- model_rnd
+
+            data.Y = link_map[params.Link_func](data.Y + rand.NormFloat64())
+            out <-data
         }
     }
 }
@@ -223,19 +224,29 @@ func Sgd(y float64, x []float64, theta0 []float64, loss_func string, eta int) (t
     return theta_hat
 }
 
-func Sgd_online(input chan model, output chan theta_hat) {
+// TODO: This interfact still doesn't feel right ...
+
+func Sgd_online(data chan Obs, sgd_params chan Model, theta_hat chan []float64) {
+    n := 0
     for {
         select {
-        case model := <-input:
-            theta_est := make([]float64, len(model.Theta0))
+        // Initialize parameters 
+        // TODO: Need an observation counter so that these variables are only initialized once
+        case params := <-sgd_params:
+            theta_est := params.Theta0
+            loss_func := params.Loss_func
+            eta := params.Eta
+        // Update state
+        case obs := <-data:
+            y := obs.Y
+            x := obs.X
+            step_size := (1/(float64(eta) + 1))
+            grad := loss_map[loss_func](y, x, theta0)
 
-            step_size := (1/(float64(model.Eta) + 1))
-            grad := loss_map[model.Loss_func](model.Y, model.X, model.Theta0)
-
-            for i := 0; i < len(model.Theta0); i++ {
-                theta_est[i] = model.Theta0[i] + step_size * grad[i]
+            for i := 0; i < len(theta0); i++ {
+                theta_est[i] = theta_est[i] + step_size * grad[i]
             }
-            output <-theta_est
+            theta_hat <-theta_est
         }
     }
 }

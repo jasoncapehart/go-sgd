@@ -45,9 +45,12 @@ func TestLogistic(t *testing.T) {
 }
 
 func TestLinearConc(t *testing.T) {
-    m := glm_gen{[]float64{1, 2, 3}, 0, "identity"}
-    for i := 0; i < 100; i__ {
+    data := make(chan []float64)
+    kill := make(chan bool)
+
+    for i := 0; i < 100; i++ {
         // Draw from GLM
+        // Transform RNG to SGD input
         // Send to SGD
     }
 
