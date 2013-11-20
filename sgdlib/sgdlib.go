@@ -71,6 +71,8 @@ type Model struct {
     Theta0 []float64
     Loss_func string
     Eta int
+    Theta_hat []float64
+    N int
 }
 
 
@@ -226,13 +228,11 @@ func Sgd(y float64, x []float64, theta0 []float64, loss_func string, eta int) (t
 
 // TODO: This interfact still doesn't feel right ...
 
-func Sgd_online(data chan Obs, sgd_params chan Model, theta_hat chan []float64) {
-    n := 0
+func Sgd_online(data chan Obs, sgd_params chan Model) {
     for {
         select {
         // Initialize parameters 
-        // TODO: Need an observation counter so that these variables are only initialized once
-        case params := <-sgd_params:
+        case params := <-sgd_params && sgd_params.N == 0:
             theta_est := params.Theta0
             loss_func := params.Loss_func
             eta := params.Eta
@@ -246,8 +246,10 @@ func Sgd_online(data chan Obs, sgd_params chan Model, theta_hat chan []float64) 
             for i := 0; i < len(theta0); i++ {
                 theta_est[i] = theta_est[i] + step_size * grad[i]
             }
-            theta_hat <-theta_est
+            // Update N, theta_hat, etc.
         }
+        // Poll state
+        // TODO: Send sgd_params back through the channel
     }
 }
 
