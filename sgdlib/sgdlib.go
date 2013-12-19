@@ -42,23 +42,10 @@ import (
     "math"
     "math/rand"
     "time"
+    "stats"
 )
 
 // TODO: Add map{} for step_size functions
-
-// Learning Rate Schedule 
-//=======================
-
-type eta_func func(k int) (eta float64)
-
-var eta_map = map[string]eta_func {
-    "inverse":eta_inverse,
-}
-
-func eta_inverse(k int) (eta float64) {
-    eta = 1 / float64(k)
-    return eta
-}
 
 // Channel Types
 //======================
@@ -70,148 +57,90 @@ type Obs struct {
 type Model struct {
     Theta0 []float64
     Loss_func string
-    Eta int
+    Learn_rate Rate
+    Eta_func string
     Theta_hat []float64
     N int
+    // Include convergence criteria
 }
 
+// Learning Rate Schedule 
+//=======================
+// TODO: Create AdaGrad func
 
-// Link Functions
-//===================================
-type link_func func(x float64) (y float64)
-
-var link_map = map[string]link_func {
-    "identity":identity,
-    "logit":logit,
+type Rate struct {
+    K int
+    Tau_0 float64
+    Kappa float64
 }
 
-func identity(x float64) (y float64) {
-    y = x
-    return y
+type eta_func func(learn_rate Rate) (eta float64)
+
+var eta_map = map[string]eta_func {
+    "inverse":eta_inverse,
+    "bottou":bottou,
 }
 
-func logit(x float64) (y float64) {
-    y = 1 / (1 + math.Exp(-x))
-    return y
+func eta_inverse(learn_rate Rate) (eta float64) {
+    eta = 1 / float64(Rate.K)
+    return eta
 }
 
-
-// Loss Functions
-//====================================
-
-type loss_func func(y float64, x []float64, theta []float64) (grad []float64)
-
-var loss_map = map[string]loss_func {
-    "linear":grad_linear_loss,
-    "logistic":grad_logistic_loss,
+func bottou(learn_rate Rate) (eta float64) {
+    eta = mat.Pow((Rate.Tau_0 + Rate.K), -Rate.Kappa)
+    return eta
 }
 
-func grad_linear_loss(y float64, x []float64, theta []float64) (grad []float64) {
-    // g = x_i * (y_est(theta, x_i) - y_i)
-    var y_est float64
-    grad = make([]float64, len(theta))
-
-    // y_est = theta * x_i
-    for i := 0; i < len(theta); i++ {
-	   y_est = y_est + x[i] * theta[i]
-    }
-
-    // grad = (y - y_est) * x_i
-    for i := 0; i < len(theta); i++ {
-        grad[i] = (y - y_est) * x[i]
-    }
-
-	return grad
-}
-
-func grad_logistic_loss(y float64, x []float64, theta []float64) (grad []float64) {
-    // grad = ( y - 1 / math.Exp(-(x * theta)) ) * x
-    var y_est float64
-    grad = make([]float64, len(theta))
-
-    // y_est = theta * x_i
-    for i := 0; i < len(theta); i++ {
-        y_est = y_est + x[i] * theta[i]
-    }
-
-    // grad = (y - y_est) * x_i
-    for i := 0; i < len(theta); i++ {
-        grad[i] = (y - logit(y_est)) * x[i]
-    }
-
-    return grad
-}
-
-// Data Generators
-//===============================
-
-// Lin reg RNG
-func Lin_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []float64) {
-    // TODO: The size of x is known beforehand, so allocate a fixed 2d array 
-    x = make([][]float64, n)
-    y = make([]float64, n)
-
-    for i := 0; i < n; i++ {
-        y[i] = beta0
-        x[i] = make([]float64, len(betas))
-        for j := 0; j < len(betas); j++ {
-            x[i][j] = rand.Float64()
-            y[i] = y[i] + betas[j] * x[i][j] + rand.NormFloat64()
-        }
-    }
-    return x, y
-}
-
-// Log reg RNG
-func Log_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []float64) {
-    x = make([][]float64, n)
-    y = make([]float64, n)
-
-    for i := 0; i < n; i++ {
-        y[i] = beta0
-        x[i] = make([]float64, len(betas))
-        for j := 0; j < len(betas); j++ {
-            x[i][j] = rand.Float64()
-            y[i] = y[i] + betas[j] * x[i][j] + rand.NormFloat64()
-        }
-        y[i] = logit(y[i])
-    }
-
-    return x, y
-}
-
-// GLM generation
-type Glm_gen struct {
-    Betas []float64
-    Beta0 float64
-    Link_func string
-}
-
-
-// TODO: Add mean and sd parameters for noise
-
-func Glm_rng(params Glm_gen, out chan Model) {
-    for {
-        select {
-        case params:
-            n := len(params.Betas)
-            data := Model{}
-            data.X := make([]float64, n)
-            data.Y := model.Beta0
-
-            for i := 0; i < n; i ++ {
-                data.X[i] = rand.Float64()
-                data.Y = data.Y + params.Betas[i] * data.X[i]
-            }
-
-            data.Y = link_map[params.Link_func](data.Y + rand.NormFloat64())
-            out <-data
-        }
-    }
-}
 
 // SGD Kernel
-//=============================
+//===========
+
+//TODO: Include a check for convergence
+
+func Sgd(data chan Obs, sgd_params chan Model, state chan Model, poll bool) {
+    var curr_state Model
+    var learn_rate Rate
+    for {
+        select {
+        // poll state
+        case msg := <-poll:
+            if poll == 0:
+                state <-curr_state
+        // initialize SGD process
+        case params := <-sgd_params:
+            // Set the process variables
+            theta0 := params.Theta0
+            loss_func := params.Loss_func
+            learn_rate := params.Learn_rate
+            eta_func := params.Eta_func
+            n := params.N
+            // Set the state for the unchanging Model vars
+            curr_state.Theta0 = theta0
+            curr_state.Loss_func = loss_func
+            curr_state.Eta_func = eta_func
+        // update state
+        case obs := <-data:
+            y := obs.Y
+            x := obs.X
+            n = n + 1
+            curr_state.N = n
+            curr_state.Learn_rate.K = n
+
+            eta := eta_map[eta_func](learn_rate)
+            grad := stats.loss_map[loss_func](y, x, theta0)
+
+            for i:=0; i < len(theta0); i++ {
+                theta_est[i] = theta_est[i] + eta * grad[i]
+            }
+
+            curr_state.Theta_hat = theta_est
+
+        }
+    }
+
+}
+
+/*
 
 func Sgd(y float64, x []float64, theta0 []float64, loss_func string, eta int) (theta_hat []float64) {
     theta_hat = make([]float64, len(theta0))
@@ -226,7 +155,7 @@ func Sgd(y float64, x []float64, theta0 []float64, loss_func string, eta int) (t
     return theta_hat
 }
 
-// TODO: This interfact still doesn't feel right ...
+// TODO: This interface still doesn't feel right ...
 
 func Sgd_online(data chan Obs, sgd_params chan Model) {
     for {
@@ -252,4 +181,4 @@ func Sgd_online(data chan Obs, sgd_params chan Model) {
         // TODO: Send sgd_params back through the channel
     }
 }
-
+*/
