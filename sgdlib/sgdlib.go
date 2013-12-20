@@ -61,7 +61,6 @@ type Model struct {
     Eta_func string
     Theta_hat []float64
     N int
-    // Include convergence criteria
 }
 
 // Learning Rate Schedule 
@@ -97,7 +96,7 @@ func bottou(learn_rate Rate) (eta float64) {
 
 //TODO: Include a check for convergence
 
-func Sgd(data chan Obs, sgd_params chan Model, state chan Model, poll bool) {
+func Sgd(data chan Obs, sgd_params chan Model, state chan Model, poll chan bool, quit chan bool) {
     var curr_state Model
     var learn_rate Rate
     for {
@@ -133,11 +132,13 @@ func Sgd(data chan Obs, sgd_params chan Model, state chan Model, poll bool) {
                 theta_est[i] = theta_est[i] + eta * grad[i]
             }
 
+            fmt.Printf("theta_hat: %v \n", theta_est)
             curr_state.Theta_hat = theta_est
-
+        case terminate := <-quit:
+            if quit == true:
+               return
         }
     }
-
 }
 
 /*

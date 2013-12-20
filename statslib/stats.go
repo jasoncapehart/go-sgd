@@ -18,7 +18,6 @@ package stats
 import (
     "math"
     "math/rand"
-    "time"
 )
 
 // Link Functions
@@ -58,7 +57,7 @@ func grad_linear_loss(y float64, x []float64, theta []float64) (grad []float64) 
 
     for i := 0; i < len(theta); i++ {
 	   y_est = y_est + x[i] * theta[i]
-       grad = (y - y_est) * x[i]
+       grad[i] = (y - y_est) * x[i]
     }
 
 	return grad
@@ -79,7 +78,7 @@ func grad_logistic_loss(y float64, x []float64, theta []float64) (grad []float64
 
 // Data Generators
 //===============================
-
+/*
 // Lin reg RNG
 func Lin_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []float64) {
     // TODO: The size of x is known beforehand, so allocate a fixed 2d array 
@@ -114,36 +113,43 @@ func Log_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []floa
 
     return x, y
 }
+*/
 
 // GLM generation
-type Glm_gen struct {
-    Betas []float64
-    Beta0 float64
-    Link_func string
-}
-
-type Obs {
+type Obs struct {
     Y float64
     X []float64
 }
 
+type Err struct {
+    Mean float64
+    StDev float64
+}
+
+type Glm_gen struct {
+    Betas []float64
+    Beta0 float64
+    Link_func string
+    Error Err
+}
+
 // TODO: Add mean and sd parameter for noise
 
-func Glm_rng(params Glm_gen, out chan Obs) {
+func Glm_rng(model_params chan Glm_gen, out chan Obs) {
     for {
         select {
-        case params:
+        case params := <-model_params:
             n := len(params.Betas)
             data := Obs{}
-            data.X := make([]float64, n)
-            data.Y := model.Beta0
+            data.X = make([]float64, n)
+            data.Y = params.Beta0
 
             for i := 0; i < n; i ++ {
                 data.X[i] = rand.Float64()
-                data.Y = data.Y + params.Betas[i] * data.X[i]
+                data.Y = data.Y + params.Betas[i] * data.X[i] + (rand.NormFloat64()*params.Error.StDev + params.Error.Mean)
             }
 
-            data.Y = link_map[params.Link_func](data.Y + rand.NormFloat64())
+            data.Y = link_map[params.Link_func](data.Y)
             out <-data
         }
     }
