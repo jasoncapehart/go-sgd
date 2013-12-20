@@ -16,6 +16,7 @@ Stat Functions for SGD
 package stats
 
 import (
+    "fmt"
     "math"
     "math/rand"
 )
@@ -76,45 +77,6 @@ func grad_logistic_loss(y float64, x []float64, theta []float64) (grad []float64
     return grad
 }
 
-// Data Generators
-//===============================
-/*
-// Lin reg RNG
-func Lin_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []float64) {
-    // TODO: The size of x is known beforehand, so allocate a fixed 2d array 
-    x = make([][]float64, n)
-    y = make([]float64, n)
-
-    for i := 0; i < n; i++ {
-        y[i] = beta0
-        x[i] = make([]float64, len(betas))
-        for j := 0; j < len(betas); j++ {
-            x[i][j] = rand.Float64()
-            y[i] = y[i] + betas[j] * x[i][j] + rand.NormFloat64()
-        }
-    }
-    return x, y
-}
-
-// Log reg RNG
-func Log_reg_gen(n int, betas []float64, beta0 float64) (x [][]float64, y []float64) {
-    x = make([][]float64, n)
-    y = make([]float64, n)
-
-    for i := 0; i < n; i++ {
-        y[i] = beta0
-        x[i] = make([]float64, len(betas))
-        for j := 0; j < len(betas); j++ {
-            x[i][j] = rand.Float64()
-            y[i] = y[i] + betas[j] * x[i][j] + rand.NormFloat64()
-        }
-        y[i] = logit(y[i])
-    }
-
-    return x, y
-}
-*/
-
 // GLM generation
 type Obs struct {
     Y float64
@@ -135,7 +97,7 @@ type Glm_gen struct {
 
 // TODO: Add mean and sd parameter for noise
 
-func Glm_rng(model_params chan Glm_gen, out chan Obs) {
+func glm_rng(model_params chan Glm_gen, out chan Obs) {
     for {
         select {
         case params := <-model_params:
@@ -150,6 +112,7 @@ func Glm_rng(model_params chan Glm_gen, out chan Obs) {
             }
 
             data.Y = link_map[params.Link_func](data.Y)
+            fmt.Printf("Obs: %v \n", data)
             out <-data
         }
     }

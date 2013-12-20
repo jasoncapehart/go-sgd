@@ -32,3 +32,18 @@ func TestLogitLink(t *testing.T) {
         t.Errorf("Logit link function broken")
     }
 }
+
+func TestLinGlm(t *testing.T) {
+    params := make(chan Glm_gen)
+    rng := make(chan Obs)
+    kill := make(chan bool)
+
+    noise := Err{0.0, 0.0}
+    model := Glm_gen{[]float64{1.0, 1.0}, 0.0, "identity", noise}
+
+    go glm_rng(params, rng)
+
+    params <-model
+
+    <-kill
+}
