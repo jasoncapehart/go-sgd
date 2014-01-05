@@ -38,11 +38,8 @@ Changes
 package sgdlib
 
 import (
-	// "fmt"
+	"log"
 	"math"
-	"math/rand"
-	"stats"
-	"time"
 )
 
 // TODO: Add map{} for step_size functions
@@ -81,12 +78,12 @@ var eta_map = map[string]eta_func{
 }
 
 func eta_inverse(learn_rate Rate) (eta float64) {
-	eta = 1 / float64(Rate.K)
+	eta = 1 / float64(learn_rate.K)
 	return eta
 }
 
 func bottou(learn_rate Rate) (eta float64) {
-	eta = mat.Pow((Rate.Tau_0 + Rate.K), -Rate.Kappa)
+	eta = math.Pow((learn_rate.Tau_0 + float64(learn_rate.K)), -learn_rate.Kappa)
 	return eta
 }
 
@@ -95,9 +92,10 @@ func bottou(learn_rate Rate) (eta float64) {
 
 //TODO: Include a check for convergence
 
-func Sgd(data chan Obs, sgd_params chan Model, state chan Model, poll chan chan state, quit chan bool) {
+func Sgd(data chan Obs, sgd_params chan Model, poll chan chan Model, quit chan bool) {
 	var curr_state Model
 	var learn_rate Rate
+	n := 0
 	for {
 		select {
 		// poll state
@@ -108,13 +106,10 @@ func Sgd(data chan Obs, sgd_params chan Model, state chan Model, poll chan chan 
 			// Set the process variables
 			theta0 := params.Theta0
 			loss_func := params.Loss_func
-			learn_rate := params.Learn_rate
-			eta_func := params.Eta_func
-			n := params.N
 			// Set the state for the unchanging Model vars
 			curr_state.Theta0 = theta0
 			curr_state.Loss_func = loss_func
-			curr_state.Eta_func = eta_func
+			curr_state.Eta_func = params.Eta_func
 		// update state
 		case obs := <-data:
 			y := obs.Y
@@ -123,14 +118,15 @@ func Sgd(data chan Obs, sgd_params chan Model, state chan Model, poll chan chan 
 			curr_state.N = n
 			curr_state.Learn_rate.K = n
 
-			eta := eta_map[eta_func](learn_rate)
-			grad := stats.loss_map[loss_func](y, x, theta0)
+			eta := eta_map[curr_state.Eta_func](learn_rate)
+			grad := loss_map[curr_state.Loss_func](y, x, curr_state.Theta0)
 
-			for i := 0; i < len(theta0); i++ {
-				theta_est[i] = theta_est[i] + eta*grad[i]
+			theta_est := make([]float64, len(curr_state.Theta0))
+			for i, _ := range curr_state.Theta0 {
+				theta_est[i] += eta * grad[i]
 			}
 
-			fmt.Printf("theta_hat: %v \n", theta_est)
+			log.Println("theta_hat:", theta_est)
 			curr_state.Theta_hat = theta_est
 		case <-quit:
 			break
