@@ -106,6 +106,8 @@ func Sgd(data chan Obs, sgd_params chan Model, poll chan chan Model, quit chan b
 			// Set the process variables
 			theta0 := params.Theta0
 			loss_func := params.Loss_func
+			// learning rate
+			learn_rate = params.Learn_rate
 			// Set the state for the unchanging Model vars
 			curr_state.Theta0 = theta0
 			curr_state.Loss_func = loss_func
@@ -116,7 +118,7 @@ func Sgd(data chan Obs, sgd_params chan Model, poll chan chan Model, quit chan b
 			x := obs.X
 			n = n + 1
 			curr_state.N = n
-			curr_state.Learn_rate.K = n
+			learn_rate.K = n
 
 			eta := eta_map[curr_state.Eta_func](learn_rate)
 			grad := loss_map[curr_state.Loss_func](y, x, curr_state.Theta0)

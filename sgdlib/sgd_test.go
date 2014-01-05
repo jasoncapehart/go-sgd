@@ -11,6 +11,7 @@ package sgdlib
 
 import (
 	"fmt"
+	"log"
 	"testing"
 )
 
@@ -34,7 +35,7 @@ func TestLinear(t *testing.T) {
 	// initialise the kernel
 	// TODO does this really need to be done through a channel?
 	rate := Rate{}
-	θ := []float64{1, 2, 3}
+	θ := []float64{1, 1, 1}
 	paramsChan <- Model{
 		Theta0:     θ,
 		Loss_func:  "linear",
@@ -43,22 +44,27 @@ func TestLinear(t *testing.T) {
 	}
 
 	// run the sgd
-	for i := 0; i < 100; i++ {
+	var state Model
+	for i := 0; i < 500; i++ {
 		// send through a data point
 		o := <-getTestDataChan
 		dataChan <- o
+		log.Println("sent data")
 		// get the state
 		stateChan <- responseChan
+		state = <-responseChan
+		log.Println("recieved state")
 		// print it
-		fmt.Println(<-responseChan)
+		fmt.Println(state)
 	}
 
 	// now the sgd has seen a whole bunch of data points, where's it at?
-	finalState := <-responseChan
 	// hopefully we converged on the right answer..
-	if finalState.Theta_hat[0] < 0.90 || finalState.Theta_hat[0] > 1.10 {
+	log.Println(state.Theta_hat)
+	if state.Theta_hat[0] < 0.90 || state.Theta_hat[0] > 1.10 {
 		t.Errorf("Did not converge!")
 	}
+	log.Println("done")
 }
 
 /*
