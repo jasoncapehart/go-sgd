@@ -17,10 +17,8 @@ import (
 
 func TestLinear(t *testing.T) {
 
-	// create a generator of test data
+	// true params
 	β := []float64{1, 2, 3}
-	getTestDataChan := make(chan Obs)
-	go Lin_reg_gen(β, getTestDataChan)
 
 	// make all the channels
 	dataChan := make(chan Obs)
@@ -47,16 +45,16 @@ func TestLinear(t *testing.T) {
 	var state Model
 	for i := 0; i < 500; i++ {
 		// send through a data point
-		o := <-getTestDataChan
+		o := Lin_reg_gen(β)
 		dataChan <- o
-		log.Println("sent data")
 		// get the state
 		stateChan <- responseChan
 		state = <-responseChan
-		log.Println("recieved state")
 		// print it
-		fmt.Println(state)
+		fmt.Printf("%+v\n", state)
 	}
+
+	quitChan <- true
 
 	// now the sgd has seen a whole bunch of data points, where's it at?
 	// hopefully we converged on the right answer..

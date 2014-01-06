@@ -104,14 +104,16 @@ func Sgd(data chan Obs, sgd_params chan Model, poll chan chan Model, quit chan b
 		// initialize SGD process
 		case params := <-sgd_params:
 			// Set the process variables
-			theta0 := params.Theta0
 			loss_func := params.Loss_func
 			// learning rate
 			learn_rate = params.Learn_rate
 			// Set the state for the unchanging Model vars
-			curr_state.Theta0 = theta0
+			curr_state.Theta_hat = params.Theta0
 			curr_state.Loss_func = loss_func
 			curr_state.Eta_func = params.Eta_func
+			log.Println("init:")
+			log.Printf("%+v", curr_state)
+
 		// update state
 		case obs := <-data:
 			y := obs.Y
@@ -121,17 +123,19 @@ func Sgd(data chan Obs, sgd_params chan Model, poll chan chan Model, quit chan b
 			learn_rate.K = n
 
 			eta := eta_map[curr_state.Eta_func](learn_rate)
-			grad := loss_map[curr_state.Loss_func](y, x, curr_state.Theta0)
+			grad := loss_map[curr_state.Loss_func](y, x, curr_state.Theta_hat)
 
-			theta_est := make([]float64, len(curr_state.Theta0))
-			for i, _ := range curr_state.Theta0 {
+			theta_est := make([]float64, len(curr_state.Theta_hat))
+			for i, _ := range curr_state.Theta_hat {
 				theta_est[i] += eta * grad[i]
 			}
 
 			log.Println("theta_hat:", theta_est)
 			curr_state.Theta_hat = theta_est
+			log.Printf("%+v", learn_rate)
 		case <-quit:
-			break
+			log.Println("quitting SGD kernel")
+			return
 		}
 	}
 }

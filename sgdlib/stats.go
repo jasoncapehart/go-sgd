@@ -113,17 +113,15 @@ func glm_rng(model_params chan Glm_gen, out chan Obs) {
 	}
 }
 
-func Lin_reg_gen(β []float64, outChan chan Obs) {
-	for {
-		Y := 0.0
-		X := make([]float64, len(β))
-		for i, _ := range β {
-			X[i] = rand.Float64()
-			Y += β[i] * X[i]
-		}
-		outChan <- Obs{
-			X: X,
-			Y: Y,
-		}
+func Lin_reg_gen(β []float64) Obs {
+	Y := 0.0
+	X := make([]float64, len(β))
+	for i, _ := range β {
+		X[i] = rand.Float64()
+		Y += β[i] * X[i]
+	}
+	return Obs{
+		X: X,
+		Y: Y,
 	}
 }
