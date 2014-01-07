@@ -13,7 +13,7 @@ func linearModel(β []float64, getChan chan chan obs, quitChan chan bool) {
 			y := 0.0
 			x := make([]float64, len(β))
 			for i, βi := range β {
-				x[i] = rand.Float64()
+				x[i] = rand.NormFloat64() * float64(i)
 				y += βi * x[i]
 			}
 			resChan <- obs{
@@ -47,7 +47,7 @@ func TestSgd(t *testing.T) {
 	var θ []float64
 	modelRespChan := make(chan obs)
 	kernelRespChan := make(chan []float64)
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 500; i++ {
 		// get data
 		getChan <- modelRespChan
 		obs := <-modelRespChan
@@ -57,10 +57,11 @@ func TestSgd(t *testing.T) {
 		stateChan <- kernelRespChan
 		// ... in order to print it
 		θ = <-kernelRespChan
-		log.Println(θ)
 	}
+	log.Println(θ)
 
-	if θ[0] < 0.90 || θ[0] > 1.10 {
+	θ_sum := θ[0] + θ[1] + θ[2]
+	if !((5.9 < θ_sum) && (θ_sum < 6.1)) {
 		t.Errorf("Did not converge!")
 	}
 
