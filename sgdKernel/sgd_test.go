@@ -85,8 +85,6 @@ func TestSgdLinear(t *testing.T) {
 	// ... in order to print it
 	θ = <-kernelRespChan
 
-	log.Println(θ)
-
 	if !((0.9 < θ[0]) && (θ[0] < 1.1)) {
 		t.Errorf("Failed to converge on correct θ_0")
 	}
@@ -102,7 +100,7 @@ func TestSgdLinear(t *testing.T) {
 func TestSgdLogistic(t *testing.T) {
 
 	// model
-	β := []float64{1, 2, 3}
+	β := []float64{2}
 	getChan := make(chan chan obs)
 	modelQuitChan := make(chan bool)
 	go logisticModel(β, getChan, modelQuitChan)
@@ -112,7 +110,7 @@ func TestSgdLogistic(t *testing.T) {
 	paramChan := make(chan params)
 	stateChan := make(chan chan []float64)
 	kernelQuitChan := make(chan bool)
-	θ_0 := []float64{1, 1, 1}
+	θ_0 := []float64{1}
 	go SgdKernel(dataChan, paramChan, stateChan, kernelQuitChan,
 		grad_logistic_loss, eta_inverse, θ_0)
 
@@ -120,25 +118,32 @@ func TestSgdLogistic(t *testing.T) {
 	var θ []float64
 	modelRespChan := make(chan obs)
 	kernelRespChan := make(chan []float64)
-	for i := 0; i < 50000; i++ {
+	for i := 0; i < 50; i++ {
 		// get data
 		getChan <- modelRespChan
 		obs := <-modelRespChan
 		// send to kernel
 		dataChan <- obs
+		stateChan <- kernelRespChan
+		θ = <-kernelRespChan
+		log.Println(θ, obs)
 	}
 	// get state from kernel
 	stateChan <- kernelRespChan
 	θ = <-kernelRespChan
 	log.Println(θ)
 
-	if !((0.9 < θ[0]) && (θ[0] < 1.1)) {
-		t.Errorf("Failed to converge on correct θ_0")
-	}
-	if !((1.9 < θ[1]) && (θ[1] < 2.1)) {
+	/*
+		if !((0.9 < θ[0]) && (θ[0] < 1.1)) {
+			t.Errorf("Failed to converge on correct θ_0")
+		}
+	*/
+	if !((1.9 < θ[0]) && (θ[0] < 2.1)) {
 		t.Errorf("Failed to converge on correct θ_1")
 	}
-	if !((2.9 < θ[2]) && (θ[2] < 3.1)) {
-		t.Errorf("Failed to converge on correct θ_2")
-	}
+	/*
+		if !((2.9 < θ[2]) && (θ[2] < 3.1)) {
+			t.Errorf("Failed to converge on correct θ_2")
+		}
+	*/
 }
