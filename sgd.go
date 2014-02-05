@@ -1,25 +1,25 @@
 package sgd
 
 import (
-	//	"log"
+	"log"
 	"math"
 )
 
-type lossFunc func(x []float64, y float64, θ []float64) []float64
-type stepFunc func(K float64, τ float64, κ float64) float64
+type LossFunc func(x []float64, y float64, θ []float64) []float64
+type StepFunc func(K float64, τ float64, κ float64) float64
 
-type params struct {
+type Params struct {
 	τ float64
 	κ float64
 }
 
-type obs struct {
-	x []float64
-	y float64
+type Obs struct {
+	X []float64
+	Y float64
 }
 
-func SgdKernel(dataChan chan obs, paramChan chan params, stateChan chan chan []float64, quitChan chan bool,
-	J lossFunc, getStepSize stepFunc, θ_0 []float64) {
+func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []float64, quitChan chan bool,
+	J LossFunc, getStepSize StepFunc, θ_0 []float64) {
 	// initialise the state
 	θ := θ_0
 	// initialise the counter
@@ -30,13 +30,14 @@ func SgdKernel(dataChan chan obs, paramChan chan params, stateChan chan chan []f
 		select {
 		case o := <-dataChan:
 			// calculate the local gradient
-			x := o.x
-			y := o.y
+			x := o.X
+			y := o.Y
 			grad := J(x, y, θ)
 			// update the step size
 			n += 1
 			K := float64(n)
 			η := getStepSize(K, τ, κ)
+			log.Println("η", η)
 			// update the new state
 			for i, _ := range θ {
 				θ[i] += η * grad[i]
@@ -53,10 +54,10 @@ func SgdKernel(dataChan chan obs, paramChan chan params, stateChan chan chan []f
 }
 
 // step size update rules
-func eta_inverse(K float64, τ float64, κ float64) float64 {
+func EtaInverse(K float64, τ float64, κ float64) float64 {
 	return 1 / K
 }
-func eta_bottou(K float64, τ float64, κ float64) float64 {
+func EtaBottou(K float64, τ float64, κ float64) float64 {
 	return math.Pow((τ + K), κ)
 }
 
@@ -70,19 +71,21 @@ func logit(x float64) float64 {
 }
 
 // Loss Functions
-func grad_linear_loss(x []float64, y float64, θ []float64) []float64 {
+func GradLinearLoss(x []float64, y float64, θ []float64) []float64 {
 	grad := make([]float64, len(θ))
-	y_est := 0.0
+	yEst := 0.0
 	for i, θi := range θ {
-		y_est += x[i] * θi
+		yEst += x[i] * θi
 	}
+	err := (y - yEst)
 	for i, xi := range x {
-		grad[i] = (y - y_est) * xi
+		grad[i] = err * xi
 	}
+	log.Println("x", x, "y", y, "yEst", yEst, "err", err, "Δ", grad)
 	return grad
 }
 
-func grad_logistic_loss(x []float64, y float64, θ []float64) []float64 {
+func GradLogisticLoss(x []float64, y float64, θ []float64) []float64 {
 	// grad = ( y - 1 / math.Exp(-(x * theta)) ) * x
 	grad := make([]float64, len(θ))
 	yEst := 0.0

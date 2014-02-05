@@ -74,7 +74,7 @@ func TestSgdLinear(t *testing.T) {
 	var θ []float64
 	modelRespChan := make(chan obs)
 	kernelRespChan := make(chan []float64)
-	for i := 0; i < 5000; i++ {
+	for i := 0; i < 200; i++ {
 		// get data
 		getChan <- modelRespChan
 		obs := <-modelRespChan
@@ -124,7 +124,7 @@ func TestSgdLogistic(t *testing.T) {
 	var θ []float64
 	modelRespChan := make(chan obs)
 	kernelRespChan := make(chan []float64)
-	for i := 0; i < 500000; i++ {
+	for i := 0; i < 10; i++ {
 		// get data
 		getChan <- modelRespChan
 		obs := <-modelRespChan
