@@ -1,7 +1,7 @@
 package sgd
 
 import (
-	"log"
+	"fmt"
 	"math"
 )
 
@@ -35,12 +35,12 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 			grad := J(x, y, θ)
 			// update the step size
 			n += 1
-			K := float64(n)
+			K := float64(n) // K is just the number of observations seen so far
 			η := getStepSize(K, τ, κ)
-			log.Println("η", η)
 			// update the new state
 			for i, _ := range θ {
 				θ[i] += η * grad[i]
+				fmt.Printf("\t η:%.2f Δ:%.2f θ:%.2f\n", η, grad[i], θ[i])
 			}
 		case params := <-paramChan:
 			τ = params.τ
@@ -58,7 +58,7 @@ func EtaInverse(K float64, τ float64, κ float64) float64 {
 	return 1 / K
 }
 func EtaBottou(K float64, τ float64, κ float64) float64 {
-	return math.Pow((τ + K), κ)
+	return math.Pow((τ + K), -κ)
 }
 
 // Link Functions
@@ -81,21 +81,34 @@ func GradLinearLoss(x []float64, y float64, θ []float64) []float64 {
 	for i, xi := range x {
 		grad[i] = err * xi
 	}
-	log.Println("x", x, "y", y, "yEst", yEst, "err", err, "Δ", grad)
+	//log.Println("x", x, "y", y, "yEst", yEst, "err", err, "Δ", grad)
 	return grad
 }
 
 func GradLogisticLoss(x []float64, y float64, θ []float64) []float64 {
-	// grad = ( y - 1 / math.Exp(-(x * theta)) ) * x
 	grad := make([]float64, len(θ))
-	yEst := 0.0
+	yest := 0.0
 	for i, θi := range θ {
-		yEst += x[i] * θi
+		yest += θi * x[i]
 	}
-	err := (y - logit(yEst))
+	//err := (logit(yest) - y)
+	err := y - logit(yest)
 	for i, xi := range x {
 		grad[i] = err * xi
+		fmt.Printf("x:%+.2f y:%.0f, yest:%+.2f, logit(yest): %.2f err:%+.2f, Δ: %v\n", xi, y, yest, logit(yest), err, grad)
 	}
-	//log.Println("x", x, "y", y, "yEst", logit(yEst), "err", err, "Δ", grad)
+	/*
+		// grad = ( y - 1 / math.Exp(-(x * theta)) ) * x
+		grad := make([]float64, len(θ))
+		yEst := 0.0
+		for i, θi := range θ {
+			yEst += x[i] * θi
+		}
+		err := (y - logit(yEst))
+		for i, xi := range x {
+			grad[i] = err * xi
+		}
+		//log.Println("x", x, "y", y, "yEst", logit(yEst), "err", err, "Δ", grad)
+	*/
 	return grad
 }
