@@ -1,7 +1,7 @@
 package sgd
 
 import (
-	"fmt"
+	//	"fmt"
 	"math"
 )
 
@@ -40,7 +40,8 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 			// update the new state
 			for i, _ := range θ {
 				θ[i] += η * grad[i]
-				fmt.Printf("\t η:%.2f Δ:%.2f θ:%.2f\n", η, grad[i], θ[i])
+				//fmt.Printf("\t η:%.2f Δ:%.2f θ:%.2f\n", η, grad[i], θ[i])
+				//fmt.Printf("\t θ:%.2f\n", θ[i])
 			}
 		case params := <-paramChan:
 			τ = params.τ
@@ -54,6 +55,9 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 }
 
 // step size update rules
+func EtaConstant(K, τ, κ float64) float64 {
+	return 0.1
+}
 func EtaInverse(K float64, τ float64, κ float64) float64 {
 	return 1 / K
 }
@@ -77,7 +81,7 @@ func GradLinearLoss(x []float64, y float64, θ []float64) []float64 {
 	for i, θi := range θ {
 		yEst += x[i] * θi
 	}
-	err := (y - yEst)
+	err := y - yEst
 	for i, xi := range x {
 		grad[i] = err * xi
 	}
@@ -95,7 +99,7 @@ func GradLogisticLoss(x []float64, y float64, θ []float64) []float64 {
 	err := y - logit(yest)
 	for i, xi := range x {
 		grad[i] = err * xi
-		fmt.Printf("x:%+.2f y:%.0f, yest:%+.2f, logit(yest): %.2f err:%+.2f, Δ: %v\n", xi, y, yest, logit(yest), err, grad)
+		//fmt.Printf("x:%+.2f y:%.0f, yest:%+.2f, logit(yest): %.2f err:%+.2f, Δ: %v\n", xi, y, yest, logit(yest), err, grad)
 	}
 	/*
 		// grad = ( y - 1 / math.Exp(-(x * theta)) ) * x

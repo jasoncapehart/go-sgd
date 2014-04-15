@@ -1,6 +1,7 @@
 package sgd
 
 import (
+	"fmt"
 	"math/rand"
 	"testing"
 )
@@ -102,7 +103,7 @@ func TestSgdLinear(t *testing.T) {
 func TestSgdLogistic(t *testing.T) {
 
 	// model
-	β := []float64{2}
+	β := []float64{30}
 	getChan := make(chan chan Obs)
 	modelQuitChan := make(chan bool)
 	go logisticModel(β, getChan, modelQuitChan)
@@ -112,16 +113,27 @@ func TestSgdLogistic(t *testing.T) {
 	paramChan := make(chan Params)
 	stateChan := make(chan chan []float64)
 	kernelQuitChan := make(chan bool)
-	θ_0 := []float64{1}
+	θ_0 := []float64{1.5}
+
+	/*
+		x := []float64{0.5}
+		y := 1.0
+		θhat := []float64{0.0}
+		for i := 0; i < 80; i++ {
+			gi := GradLogisticLoss(x, y, θhat)[0]
+			θhat[0] += 0.3
+			fmt.Printf("%.2f %.2f\n", θhat, gi)
+		}
+	*/
 
 	go SgdKernel(dataChan, paramChan, stateChan, kernelQuitChan,
-		GradLogisticLoss, EtaBottou, θ_0)
+		GradLogisticLoss, EtaConstant, θ_0)
 
 	// test
 	var θ []float64
 	modelRespChan := make(chan Obs)
 	kernelRespChan := make(chan []float64)
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 500000; i++ {
 		// get data
 		getChan <- modelRespChan
 		obs := <-modelRespChan
@@ -129,7 +141,7 @@ func TestSgdLogistic(t *testing.T) {
 		dataChan <- obs
 		stateChan <- kernelRespChan
 		θ = <-kernelRespChan
-		//log.Println("θ", θ)
+		fmt.Println(θ[0])
 	}
 	// get state from kernel
 	stateChan <- kernelRespChan
