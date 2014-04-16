@@ -10,8 +10,10 @@ type LossFunc func(x []float64, y float64, θ []float64) []float64
 type StepFunc func(K float64, τ float64, κ float64) float64
 
 type Params struct {
-	τ float64
-	κ float64
+	τ  float64
+	κ  float64
+	λ1 float64
+	λ2 float64
 }
 
 type Obs struct {
@@ -26,7 +28,7 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 	// initialise the counter
 	n := 0
 	// initialise the params
-	var τ, κ float64
+	var τ, κ, λ1, λ2 float64
 	for {
 		select {
 		case o := <-dataChan:
@@ -40,7 +42,7 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 			η := getStepSize(K, τ, κ)
 			// update the new state
 			for i, _ := range θ {
-				θ[i] += η * grad[i]
+				θ[i] += η * (grad[i] - λ1 - 2*λ2*θ[i])
 				//fmt.Printf("\t η:%.2f Δ:%.2f θ:%.2f\n", η, grad[i], θ[i])
 				//fmt.Printf("\t θ:%.2f\n", θ[i])
 			}
@@ -146,32 +148,4 @@ func GradLogisticLoss(x []float64, y float64, θ []float64) []float64 {
 		//log.Println("x", x, "y", y, "yEst", logit(yEst), "err", err, "Δ", grad)
 	*/
 	return grad
-}
-
-// Regularization Functions
-func Lasso_Regularization(θ []float64, λ float64) []float64 {
-	penalty := 0.0
-	for i, θi := range θ {
-		penalty += math.Abs(θi)
-	}
-	penalty = λ * penalty
-	return penalty
-}
-
-func Ridge_Regularization(θ []float64, λ float64) []float64 {
-	penalty := 0.0
-	for i, θi := range θ {
-		penalty += math.Pow(θi, 2)
-	}
-	penalty = λ * penalty
-	return penalty
-}
-
-func Elastic_Regularization(θ []float64, λ1 float64, λ2 float64) []float64 {
-	penalty := 0.0
-	for i, θi := range θ {
-		penalty += math.Pow(θi, 2)
-	}
-	penalty = λ * penalty
-	return penalty
 }
