@@ -99,3 +99,31 @@ func GradLogisticLoss(x []float64, y float64, θ []float64) []float64 {
 	//log.Println("x", x, "y", y, "yEst", logit(yEst), "err", err, "Δ", grad)
 	return grad
 }
+
+// Regularization Functions
+func Lasso_Regularization(θ []float64, λ float64) []float64 {
+	penalty := 0.0
+	for i, θi := range θ {
+		penalty += math.Abs(θi)
+	}
+	penalty = λ * penalty
+	return penalty
+}
+
+func Ridge_Regularization(θ []float64, λ float64) []float64 {
+	penalty := 0.0
+	for i, θi := range θ {
+		penalty += math.Pow(θi, 2)
+	}
+	penalty = λ * penalty
+	return penalty
+}
+
+func Elastic_Regularization(θ []float64, λ1 float64, λ2 float64) []float64 {
+	penalty := 0.0
+	for i, θi := range θ {
+		penalty += math.Pow(θi, 2)
+	}
+	penalty = λ * penalty
+	return penalty
+}
