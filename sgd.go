@@ -2,6 +2,7 @@ package sgd
 
 import (
 	//	"fmt"
+	"log"
 	"math"
 )
 
@@ -75,6 +76,17 @@ func logit(x float64) float64 {
 }
 
 // Loss Functions
+func LinearLoss(x, θ []float64, y, σ float64) float64 {
+	// log((1/(2*pi*sigma**2))**0.5*exp(-1/(2*σ**2)*(y-w*x)**2))
+	σ2 := math.Pow(σ, 2)
+	z := math.Pow(1.0/(2*math.Pi*σ2), 0.5)
+	yest := 0.0
+	for i, xi := range x {
+		yest += θ[i] * xi
+	}
+	return -math.Log(z * math.Exp(-1/(2*σ2)*math.Pow((y-yest), 2)))
+}
+
 func GradLinearLoss(x []float64, y float64, θ []float64) []float64 {
 	grad := make([]float64, len(θ))
 	yEst := 0.0
@@ -87,6 +99,25 @@ func GradLinearLoss(x []float64, y float64, θ []float64) []float64 {
 	}
 	//log.Println("x", x, "y", y, "yEst", yEst, "err", err, "Δ", grad)
 	return grad
+}
+
+func LogisticLoss(x, θ []float64, y float64) float64 {
+	yest := 0.0
+	for i, θi := range θ {
+		yest += θi * x[i]
+	}
+	μ := logit(yest)
+	if μ < 0 {
+		log.Println("μ cannot be less than zero")
+	}
+	if μ > 1 {
+		log.Println("μ cannot be greater than one")
+	}
+	ll := -(y*math.Log(μ) + (1-y)*math.Log(1-μ))
+	if math.IsNaN(ll) {
+		log.Println("NaN log likelihood!", y, μ, θ, x)
+	}
+	return ll
 }
 
 func GradLogisticLoss(x []float64, y float64, θ []float64) []float64 {
