@@ -27,6 +27,8 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 	n := 0
 	// initialise the params
 	var τ, κ float64
+	// initialise the adagrad step size modifier
+	s := make([]float64, len(θ))
 	for {
 		select {
 		case o := <-dataChan:
@@ -40,7 +42,8 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 			η := getStepSize(K, τ, κ)
 			// update the new state
 			for i, _ := range θ {
-				θ[i] += η * grad[i]
+				s[i] += math.Pow(grad[i], 2)
+				θ[i] += η * grad[i] / (τ + math.Sqrt(s[i]))
 				//fmt.Printf("\t η:%.2f Δ:%.2f θ:%.2f\n", η, grad[i], θ[i])
 				//fmt.Printf("\t θ:%.2f\n", θ[i])
 			}
