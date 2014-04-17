@@ -66,13 +66,13 @@ func TestSgdLinear(t *testing.T) {
 	stateChan := make(chan chan []float64)
 	kernelQuitChan := make(chan bool)
 	θ_0 := []float64{2, 1, 1}
-	go SgdKernel(dataChan, paramChan, stateChan, kernelQuitChan, GradLinearLoss, EtaInverse, θ_0)
+	go SgdKernel(dataChan, paramChan, stateChan, kernelQuitChan, GradLinearLoss, EtaConstant, θ_0)
 
 	// test
 	var θ []float64
 	modelRespChan := make(chan Obs)
 	kernelRespChan := make(chan []float64)
-	for i := 0; i < 200; i++ {
+	for i := 0; i < 2000; i++ {
 		// get data
 		getChan <- modelRespChan
 		obs := <-modelRespChan
@@ -95,7 +95,6 @@ func TestSgdLinear(t *testing.T) {
 	if !((2.9 < θ[2]) && (θ[2] < 3.1)) {
 		t.Errorf("Failed to converge on correct θ_2")
 	}
-
 }
 
 func TestSgdLogistic(t *testing.T) {
@@ -105,14 +104,12 @@ func TestSgdLogistic(t *testing.T) {
 	getChan := make(chan chan Obs)
 	modelQuitChan := make(chan bool)
 	go logisticModel(β, getChan, modelQuitChan)
-
 	// sgdkernel
 	dataChan := make(chan Obs)
 	paramChan := make(chan Params)
 	stateChan := make(chan chan []float64)
 	kernelQuitChan := make(chan bool)
 	θ_0 := []float64{10}
-
 	/*
 		x := []float64{0.5}
 		y := 1.0
@@ -123,15 +120,13 @@ func TestSgdLogistic(t *testing.T) {
 			fmt.Printf("%.2f %.2f\n", θhat, gi)
 		}
 	*/
-
 	go SgdKernel(dataChan, paramChan, stateChan, kernelQuitChan,
 		GradLogisticLoss, EtaConstant, θ_0)
-
 	// test
 	var θ []float64
 	modelRespChan := make(chan Obs)
 	kernelRespChan := make(chan []float64)
-	for i := 0; i < 2000; i++ {
+	for i := 0; i < 200000; i++ {
 		// get data
 		getChan <- modelRespChan
 		obs := <-modelRespChan
@@ -144,7 +139,7 @@ func TestSgdLogistic(t *testing.T) {
 	stateChan <- kernelRespChan
 	θ = <-kernelRespChan
 
-	if !((0.9 < θ[0]) && (θ[0] < 1.1)) {
+	if !((β[0]-0.1 < θ[0]) && (θ[0] < β[0]+0.1)) {
 		t.Errorf("Failed to converge on correct θ_0")
 	}
 	/*
