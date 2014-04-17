@@ -52,6 +52,8 @@ func SgdKernel(dataChan chan Obs, paramChan chan Params, stateChan chan chan []f
 		case params := <-paramChan:
 			τ = params.τ
 			κ = params.κ
+			λ1 = params.λ1
+			λ2 = params.λ2
 		case resChan := <-stateChan:
 			resChan <- θ
 		case <-quitChan:
